@@ -26,9 +26,6 @@ import { layoutMixins } from '@/styles/layoutMixins';
 import { RelativeTime } from '@/components/RelativeTime';
 import { Tag } from '@/components/Tag';
 
-import { useAppSelector } from '@/state/appTypes';
-import { getSelectedLocale } from '@/state/localizationSelectors';
-
 import { formatZeroNumbers } from '@/lib/formatZeroNumbers';
 import { MustBigNumber, isNumber, type BigNumberish } from '@/lib/numbers';
 import { getStringsForDateTimeDiff, getTimestamp } from '@/lib/timeUtils';
@@ -100,7 +97,7 @@ export function useFormattedDateOutput(
     'selectedLocale'
   >
 ) {
-  const selectedLocale = useAppSelector(getSelectedLocale);
+  const { selectedLocale } = useLocaleSeparators();
   return useMemo(
     () => formatDateOutput(value, type, { selectedLocale, ...options }),
     [value, type, options, selectedLocale]
@@ -361,10 +358,13 @@ export const Output = ({
   },
   timeOptions,
 }: OutputProps) => {
-  const selectedLocale = useAppSelector(getSelectedLocale);
   const stringGetter = useStringGetter();
   const isDetailsLoading = useContext(LoadingContext);
-  const { decimal: decimalSeparator, group: groupSeparator } = useLocaleSeparators();
+  const {
+    decimal: decimalSeparator,
+    group: groupSeparator,
+    selectedLocale,
+  } = useLocaleSeparators();
 
   if (!!isLoading || !!isDetailsLoading) {
     return <LoadingOutput className={className} />;
