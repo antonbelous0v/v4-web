@@ -142,9 +142,10 @@ export function formatNumberOutput(
     withSubscript?: boolean;
   }
 ) {
-  const valueBN = MustBigNumber(value).abs();
-  const isNegative = MustBigNumber(value).isNegative();
-  const isPositive = MustBigNumber(value).isPositive() && !MustBigNumber(value).isZero();
+  const rawValue = MustBigNumber(value);
+  const valueBN = rawValue.abs();
+  const isNegative = rawValue.isNegative();
+  const isPositive = rawValue.isPositive() && !rawValue.isZero();
 
   const sign: string | undefined = {
     [ShowSign.Both]: isNegative ? UNICODE.MINUS : isPositive ? UNICODE.PLUS : undefined,
