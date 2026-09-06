@@ -38,6 +38,13 @@ export const useSortedUnbondingDelegations = () => {
   );
 };
 
+export const getValidatorWithFewestTokens = (validators: Validator[]) =>
+  validators.reduce<Validator | undefined>((selected, validator) => {
+    return selected == null || BigInt(validator.tokens) < BigInt(selected.tokens)
+      ? validator
+      : selected;
+  }, undefined);
+
 export const useStakingValidator = () => {
   const { getValidators, isCompositeClientConnected } = useDydxClient();
   const selectedNetwork = useAppSelector(getSelectedNetwork);
@@ -110,14 +117,11 @@ export const useStakingValidator = () => {
     availableValidators.sort(sortByCommissionAndStakeWeight);
 
     // Set the default validator to be the validator with the fewest tokens, selected from validators configured in the whitelist
-    const whitelistedValidators = response?.validators.filter((validator) =>
+    const whitelistedValidators = availableValidators.filter((validator) =>
       validatorOptions.includes(validator.operatorAddress.toLowerCase())
     );
-
-    const validatorWithFewestTokens = (whitelistedValidators ?? availableValidators).reduce(
-      (prev, curr) => {
-        return BigInt(curr.tokens) < BigInt(prev.tokens) ? curr : prev;
-      }
+    const validatorWithFewestTokens = getValidatorWithFewestTokens(
+      whitelistedValidators.length > 0 ? whitelistedValidators : availableValidators
     );
 
     const stakingValidators =
