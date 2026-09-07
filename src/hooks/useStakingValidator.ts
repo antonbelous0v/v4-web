@@ -45,6 +45,18 @@ export const getValidatorWithFewestTokens = (validators: Validator[]) =>
       : selected;
   }, undefined);
 
+export const compareValidators = (validatorA: Validator, validatorB: Validator) => {
+  const commissionComparison = MustBigNumber(
+    validatorA.commission?.commissionRates?.rate ?? 0
+  ).comparedTo(validatorB.commission?.commissionRates?.rate ?? 0);
+
+  if (commissionComparison != null && commissionComparison !== 0) {
+    return commissionComparison;
+  }
+
+  return MustBigNumber(validatorB.delegatorShares).comparedTo(validatorA.delegatorShares) ?? 0;
+};
+
 export const useStakingValidator = () => {
   const { getValidators, isCompositeClientConnected } = useDydxClient();
   const selectedNetwork = useAppSelector(getSelectedNetwork);
@@ -88,33 +100,7 @@ export const useStakingValidator = () => {
       ) ?? [];
 
     // Sort validators 1/ in ascending commission and 2/ by descending stake weight
-    const sortByCommission = (validatorA: Validator, validatorB: Validator): number => {
-      return MustBigNumber(validatorA.commission?.commissionRates?.rate ?? 0).gt(
-        MustBigNumber(validatorB.commission?.commissionRates?.rate ?? 0)
-      )
-        ? 1
-        : -1;
-    };
-
-    const sortByCommissionAndStakeWeight = (
-      validatorA: Validator,
-      validatorB: Validator
-    ): number => {
-      if (
-        (validatorA.commission?.commissionRates?.rate ?? 0) ===
-        (validatorB.commission?.commissionRates?.rate ?? 0)
-      ) {
-        return MustBigNumber(validatorA.delegatorShares).gt(
-          MustBigNumber(validatorB.delegatorShares)
-        )
-          ? -1
-          : 1;
-      }
-      return 0;
-    };
-
-    availableValidators.sort(sortByCommission);
-    availableValidators.sort(sortByCommissionAndStakeWeight);
+    availableValidators.sort(compareValidators);
 
     // Set the default validator to be the validator with the fewest tokens, selected from validators configured in the whitelist
     const whitelistedValidators = availableValidators.filter((validator) =>
