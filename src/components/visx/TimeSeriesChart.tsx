@@ -207,24 +207,27 @@ export const TimeSeriesChart = <Datum extends {}>({
     onZoom?.({ zoomDomain });
   }, [zoomDomain, onZoom]);
 
-  useAnimationFrame(
-    (elapsedMilliseconds) => {
-      if (zoomDomainAnimateTo) {
-        setZoomDomain((oldZoomDomain) => {
-          if (!oldZoomDomain) return oldZoomDomain;
+  useAnimationFrame((elapsedMilliseconds) => {
+    if (zoomDomainAnimateTo != null) {
+      setZoomDomain((oldZoomDomain) => {
+        if (!oldZoomDomain) return oldZoomDomain;
 
-          const newZoomDomain =
-            oldZoomDomain * (zoomDomainAnimateTo / oldZoomDomain) ** (elapsedMilliseconds * 0.01);
+        const newZoomDomain =
+          oldZoomDomain * (zoomDomainAnimateTo / oldZoomDomain) ** (elapsedMilliseconds * 0.01);
 
-          // clamp according to direction
-          return zoomDomainAnimateTo > oldZoomDomain
-            ? Math.min(newZoomDomain, zoomDomainAnimateTo)
-            : Math.max(newZoomDomain, zoomDomainAnimateTo);
-        });
-      }
-    },
-    [zoomDomainAnimateTo]
-  );
+        // clamp according to direction
+        return zoomDomainAnimateTo > oldZoomDomain
+          ? Math.min(newZoomDomain, zoomDomainAnimateTo)
+          : Math.max(newZoomDomain, zoomDomainAnimateTo);
+      });
+    }
+  }, zoomDomainAnimateTo != null);
+
+  useEffect(() => {
+    if (zoomDomainAnimateTo != null && zoomDomain === zoomDomainAnimateTo) {
+      setZoomDomainAnimateTo(undefined);
+    }
+  }, [zoomDomain, zoomDomainAnimateTo]);
 
   // Computations
   const calculatedValues = useMemo(() => {
