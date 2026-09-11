@@ -28,6 +28,7 @@ import { layoutMixins } from '@/styles/layoutMixins';
 
 import Tooltip from '@/components/visx/XYChartTooltipWithBounds';
 
+import { getVisibleData } from '@/lib/chart';
 import { formatAbsoluteTime } from '@/lib/dateTime';
 import { clamp, lerp, map } from '@/lib/math';
 import { objectEntries } from '@/lib/objectHelpers';
@@ -258,16 +259,15 @@ export const TimeSeriesChart = <Datum extends {}>({
       domainBase[1] + (domainBase[1] - domainBase[0]) * domainBasePadding[1],
     ] as const;
 
-    const visibleData = data.filter(
-      (datum) => xAccessor(datum) >= domain[0] && xAccessor(datum) <= domain[1]
-    );
+    const visibleData = getVisibleData(data, xAccessor, domain);
 
-    const range = visibleData
-      .map((datum) => yAccessor(datum))
-      .reduce((calcRange, y) => [Math.min(calcRange[0], y), Math.max(calcRange[1], y)] as const, [
-        Infinity,
-        -Infinity,
-      ] as const);
+    const range = visibleData.reduce(
+      (calcRange, datum) => {
+        const y = yAccessor(datum);
+        return [Math.min(calcRange[0], y), Math.max(calcRange[1], y)] as const;
+      },
+      [Infinity, -Infinity] as const
+    );
 
     return { zoom, domain, range, visibleData };
   }, [data, zoomDomain, minZoomDomain]);
