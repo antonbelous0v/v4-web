@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { LinearGradient } from '@visx/gradient';
 import { ParentSize } from '@visx/responsive';
@@ -148,6 +148,7 @@ export const TimeSeriesChart = <Datum extends {}>({
   const { isMobile } = useBreakpoints();
 
   const chartRef = useRef<HTMLDivElement>(null);
+  const chartId = useId().replaceAll(':', '');
 
   // Chart data
   const { xAccessor, yAccessor } = series[0]!;
@@ -350,79 +351,89 @@ export const TimeSeriesChart = <Datum extends {}>({
                       }}
                     />
 
-                    {series.map((childSeries) => (
-                      <React.Fragment key={childSeries.dataKey}>
-                        {childSeries.threshold && (
-                          <>
-                            <XYChartThreshold<Datum>
-                              id={`${Math.random()}`}
-                              data={data}
-                              x={childSeries.xAccessor}
-                              y0={childSeries.yAccessor}
-                              y1={childSeries.threshold.yAccessor}
-                              clipAboveTo={margin?.top ?? 0}
-                              clipBelowTo={height - (margin?.bottom ?? 0)}
-                              curve={
-                                childSeries.getCurve?.({ zoom, zoomDomain }) ?? childSeries.curve
-                              }
-                              aboveAreaProps={{
-                                fill: 'url(#XYChartThresholdAbove)',
-                                fillOpacity: childSeries.threshold.aboveAreaProps?.fillOpacity,
-                                strokeWidth: childSeries.threshold.aboveAreaProps?.strokeWidth,
-                                stroke: childSeries.threshold.aboveAreaProps?.stroke,
-                              }}
-                              belowAreaProps={{
-                                fill: 'url(#XYChartThresholdBelow)',
-                                fillOpacity: childSeries.threshold.belowAreaProps?.fillOpacity,
-                                strokeWidth: childSeries.threshold.belowAreaProps?.strokeWidth,
-                                stroke: childSeries.threshold.belowAreaProps?.stroke,
-                              }}
-                            />
-                            <LinearGradient
-                              id="XYChartThresholdAbove"
-                              from={childSeries.threshold.aboveAreaProps?.fill}
-                              to={childSeries.threshold.aboveAreaProps?.fillTo}
-                              toOpacity={childSeries.threshold.aboveAreaProps?.fillOpacity}
-                              toOffset={`${map(0, range[0], range[1], 100, 0)}%`}
-                            />
-                            <LinearGradient
-                              id="XYChartThresholdBelow"
-                              from={childSeries.threshold.belowAreaProps?.fill}
-                              fromOpacity={childSeries.threshold.aboveAreaProps?.fillOpacity}
-                              to={childSeries.threshold.belowAreaProps?.fillTo}
-                              fromOffset={`${map(0, range[0], range[1], 100, 0)}%`}
-                            />
-                          </>
-                        )}
-                        <LineSeries
-                          dataKey={`LineSeries-${childSeries.dataKey}`}
-                          data={data}
-                          xAccessor={childSeries.xAccessor}
-                          yAccessor={childSeries.yAccessor}
-                          curve={childSeries.getCurve?.({ zoom, zoomDomain }) ?? childSeries.curve}
-                          colorAccessor={
-                            childSeries.threshold ? () => 'transparent' : childSeries.colorAccessor
-                          }
-                          onPointerMove={childSeries.onPointerMove}
-                          onPointerOut={childSeries.onPointerOut}
-                        />
+                    {series.map((childSeries) => {
+                      const seriesId = `${chartId}-${childSeries.dataKey}`;
+                      const aboveGradientId = `${seriesId}-threshold-above`;
+                      const belowGradientId = `${seriesId}-threshold-below`;
 
-                        {(childSeries.glyphSize ?? childSeries.getGlyphSize) && (
-                          <GlyphSeries
-                            dataKey={`GlyphSeries-${childSeries.dataKey}`}
+                      return (
+                        <React.Fragment key={childSeries.dataKey}>
+                          {childSeries.threshold && (
+                            <>
+                              <XYChartThreshold<Datum>
+                                id={`${seriesId}-threshold`}
+                                data={data}
+                                x={childSeries.xAccessor}
+                                y0={childSeries.yAccessor}
+                                y1={childSeries.threshold.yAccessor}
+                                clipAboveTo={margin?.top ?? 0}
+                                clipBelowTo={height - (margin?.bottom ?? 0)}
+                                curve={
+                                  childSeries.getCurve?.({ zoom, zoomDomain }) ?? childSeries.curve
+                                }
+                                aboveAreaProps={{
+                                  fill: `url(#${aboveGradientId})`,
+                                  fillOpacity: childSeries.threshold.aboveAreaProps?.fillOpacity,
+                                  strokeWidth: childSeries.threshold.aboveAreaProps?.strokeWidth,
+                                  stroke: childSeries.threshold.aboveAreaProps?.stroke,
+                                }}
+                                belowAreaProps={{
+                                  fill: `url(#${belowGradientId})`,
+                                  fillOpacity: childSeries.threshold.belowAreaProps?.fillOpacity,
+                                  strokeWidth: childSeries.threshold.belowAreaProps?.strokeWidth,
+                                  stroke: childSeries.threshold.belowAreaProps?.stroke,
+                                }}
+                              />
+                              <LinearGradient
+                                id={aboveGradientId}
+                                from={childSeries.threshold.aboveAreaProps?.fill}
+                                to={childSeries.threshold.aboveAreaProps?.fillTo}
+                                toOpacity={childSeries.threshold.aboveAreaProps?.fillOpacity}
+                                toOffset={`${map(0, range[0], range[1], 100, 0)}%`}
+                              />
+                              <LinearGradient
+                                id={belowGradientId}
+                                from={childSeries.threshold.belowAreaProps?.fill}
+                                fromOpacity={childSeries.threshold.aboveAreaProps?.fillOpacity}
+                                to={childSeries.threshold.belowAreaProps?.fillTo}
+                                fromOffset={`${map(0, range[0], range[1], 100, 0)}%`}
+                              />
+                            </>
+                          )}
+                          <LineSeries
+                            dataKey={`LineSeries-${childSeries.dataKey}`}
                             data={data}
                             xAccessor={childSeries.xAccessor}
                             yAccessor={childSeries.yAccessor}
-                            colorAccessor={childSeries.colorAccessor}
-                            size={
-                              childSeries.getGlyphSize
-                                ? (datum) => childSeries.getGlyphSize?.({ datum, zoom }) ?? 0
-                                : (childSeries.glyphSize ?? 0)
+                            curve={
+                              childSeries.getCurve?.({ zoom, zoomDomain }) ?? childSeries.curve
                             }
+                            colorAccessor={
+                              childSeries.threshold
+                                ? () => 'transparent'
+                                : childSeries.colorAccessor
+                            }
+                            onPointerMove={childSeries.onPointerMove}
+                            onPointerOut={childSeries.onPointerOut}
                           />
-                        )}
-                      </React.Fragment>
-                    ))}
+
+                          {(childSeries.glyphSize ?? childSeries.getGlyphSize) && (
+                            <GlyphSeries
+                              dataKey={`GlyphSeries-${childSeries.dataKey}`}
+                              data={data}
+                              xAccessor={childSeries.xAccessor}
+                              yAccessor={childSeries.yAccessor}
+                              colorAccessor={childSeries.colorAccessor}
+                              size={
+                                childSeries.getGlyphSize
+                                  ? (datum) => childSeries.getGlyphSize?.({ datum, zoom }) ?? 0
+                                  : (childSeries.glyphSize ?? 0)
+                              }
+                            />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
 
                     {/* Y-Axis */}
                     {!isMobile && (
