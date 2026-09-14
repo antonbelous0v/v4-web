@@ -31,6 +31,12 @@ export const getCandlesToPublish = <T extends { startedAt: string }>(
     ? candles.slice(-1)
     : candles.filter(({ startedAt }) => startedAt >= mostRecentStartedAt);
 
+export const replaceSubscription = (guid: string, unsub?: () => void) => {
+  subscriptionsByGuid[guid]?.unsub();
+  if (unsub) subscriptionsByGuid[guid] = { guid, unsub };
+  else delete subscriptionsByGuid[guid];
+};
+
 export const subscribeOnStream = ({
   store,
   symbolInfo,
@@ -46,6 +52,7 @@ export const subscribeOnStream = ({
   listenerGuid: string;
   onResetCacheNeededCallback: Function;
 }) => {
+  replaceSubscription(listenerGuid);
   if (!symbolInfo.ticker) return;
 
   const channelId = `${symbolInfo.ticker}/${RESOLUTION_MAP[resolution]}`;
@@ -87,10 +94,9 @@ export const subscribeOnStream = ({
     };
   });
 
-  subscriptionsByGuid[listenerGuid] = { guid: listenerGuid, unsub: tearDown };
+  replaceSubscription(listenerGuid, tearDown);
 };
 
 export const unsubscribeFromStream = (subscriberUID: string) => {
-  subscriptionsByGuid[subscriberUID]?.unsub();
-  subscriptionsByGuid[subscriberUID] = undefined;
+  replaceSubscription(subscriberUID);
 };
