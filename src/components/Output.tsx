@@ -33,6 +33,23 @@ import { getStringsForDateTimeDiff, getTimestamp } from '@/lib/timeUtils';
 import { LoadingOutput } from './Loading/LoadingOutput';
 import { NumberValue } from './NumberValue';
 
+const compactNumberFormatters = new Map<string, Intl.NumberFormat>();
+
+export const getCompactNumberFormatter = (locale: string, currency?: string) => {
+  const key = `${locale}:${currency ?? ''}`;
+  let formatter = compactNumberFormatters.get(key);
+  if (!formatter) {
+    formatter = Intl.NumberFormat(locale, {
+      style: currency ? 'currency' : 'decimal',
+      currency,
+      notation: 'compact',
+      maximumSignificantDigits: 3,
+    });
+    compactNumberFormatters.set(key, formatter);
+  }
+  return formatter;
+};
+
 // see useFormattedDateOutput for how to get selectedLocale in app
 export function formatDateOutput(
   value: string | number | null | undefined,
@@ -186,11 +203,7 @@ export function formatNumberOutput(
         return null;
       }
 
-      return Intl.NumberFormat(selectedLocale, {
-        style: 'decimal',
-        notation: 'compact',
-        maximumSignificantDigits: 3,
-      }).format(Math.abs(numValue));
+      return getCompactNumberFormatter(selectedLocale).format(Math.abs(numValue));
     },
     [OutputType.Number]: () => getFormattedVal(valueBN, 0),
     [OutputType.Fiat]: () => getFormattedVal(valueBN, USD_DECIMALS, { prefix: '$' }),
@@ -201,12 +214,7 @@ export function formatNumberOutput(
         return null;
       }
 
-      return Intl.NumberFormat(selectedLocale, {
-        style: 'currency',
-        currency: 'USD',
-        notation: 'compact',
-        maximumSignificantDigits: 3,
-      }).format(Math.abs(numValue));
+      return getCompactNumberFormatter(selectedLocale, 'USD').format(Math.abs(numValue));
     },
     [OutputType.Asset]: () => getFormattedVal(valueBN, TOKEN_DECIMALS),
     [OutputType.Percent]: () =>
